@@ -16,9 +16,9 @@ compile:
 	python setup.py sdist --formats=gztar  bdist_wheel
 
 deploy:
-	make build
+	make compile
 	twine upload dist/*.tar.gz dist/*.whl
 
 deploy_test:
-	make build
+	make compile
 	twine upload --repository testpypi dist/*.tar.gz dist/*.whl

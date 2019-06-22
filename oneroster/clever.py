@@ -1,7 +1,7 @@
 import json
 import logging
 import requests
-from oneroster.util import *
+from .util import *
 
 class CleverConnector():
 

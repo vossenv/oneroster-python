@@ -8,7 +8,7 @@ import hashlib
 import requests
 import json
 import logging
-from oneroster.util import *
+from .util import *
 
 
 class ClasslinkConnector():

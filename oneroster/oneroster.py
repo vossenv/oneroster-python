@@ -1,7 +1,7 @@
 
 
-from oneroster.classlink import ClasslinkConnector
-from oneroster.clever import CleverConnector
+from .classlink import ClasslinkConnector
+from .clever import CleverConnector
 
 
 def get_connector(options):
