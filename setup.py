@@ -5,9 +5,9 @@ with open("README.md", "r") as fh:
 
 test_deps = ['mock', 'pytest', 'pytest-cov']
 
-setup(name='classlink-oneroster',
-      version='0.0.1rc3',
-      description='Simple API integration with Classlink\'s Oneroster implementation',
+setup(name='oneroster',
+      version='0.0.1rc1',
+      description='Simple Oneroster client for user management',
       long_description=long_description,
       long_description_content_type="text/markdown",
       classifiers=[
@@ -19,7 +19,7 @@ setup(name='classlink-oneroster',
           'Intended Audience :: Developers',
           'Intended Audience :: System Administrators',
       ],
-      url='https://github.com/vossen-adobe/classlink',
+      url='https://github.com/vossenv/oneroster-python',
       maintainer='Danimae Vossen',
       maintainer_email='vossen.dm@gmail.com',
       license='MIT',
@@ -37,5 +37,5 @@ setup(name='classlink-oneroster',
 # twine upload --repository testpypi dist/*.tar.gz dist/*.whl
 # twine upload dist/*.tar.gz dist/*.whl
 
-# Github: https://github.com/vossen-adobe/classlink
-# PyPI: https://pypi.org/project/classlink-oneroster/
+# Github: https://github.com/vossenv/oneroster-python
+# PyPI: https://pypi.org/project/oneroster
