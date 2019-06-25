@@ -35,7 +35,7 @@ class ClasslinkConnector():
         results = []
         if group_filter == 'courses':
             key_id = self.execute_actions('courses', group_name, self.key_identifier, 'key_identifier')
-            if key_id.__len__() == 0:
+            if key_id is None:
                 return results
             list_classes = self.execute_actions(group_filter, user_filter, key_id, 'course_classlist')
             for each_class in list_classes:
@@ -44,7 +44,7 @@ class ClasslinkConnector():
             results.extend(self.execute_actions(None, user_filter, None, 'all_users'))
         else:
             key_id = self.execute_actions(group_filter, None, group_name, 'key_identifier')
-            if key_id.__len__() == 0:
+            if key_id is None:
                 return results
             results.extend(self.execute_actions(group_filter, user_filter, key_id, 'mapped_users'))
         return results[0:self.max_users] if self.max_users > 0 else results
@@ -102,20 +102,19 @@ class ClasslinkConnector():
                 if self.match_groups_by is not 'name':
                     name_identifier = self.match_groups_by
                 for entry in json.loads(response.content).get(revised_key):
-                    try:
-                        if decode_string(entry[name_identifier]) == decode_string(group_name):
-                            try:
-                                key_id = entry[self.key_identifier]
-                            except ValueError:
-                                raise ValueError('Key identifier: ' + self.key_identifier + ' not a valid identifier')
-                    except KeyError:
-                        raise KeyError("(match_groups_by) attribute  '" + name_identifier + "'  not found")
-                    try:
-                        user_list.append(key_id)
-                    except UnboundLocalError:
-                        self.logger.warning("No match for '" + group_filter + " " + group_name + "' found, using match_groups_by attribute '" + self.match_groups_by + "'")
-                        return ""
-                    return user_list[0]
+                    if name_identifier not in entry:
+                        self.logger.warning("match_groups_by attribute  '" + name_identifier + "'  not found for " + group_filter + " " + group_name +
+                                            " ..... available keys are " + str(list(entry.keys())))
+                        return
+                    if decode_string(entry[name_identifier]) == decode_string(group_name):
+                        try:
+                            return entry[self.key_identifier]
+                        except KeyError:
+                            raise KeyError('Key identifier: ' + self.key_identifier + ' not a valid identifier')
+                    else:
+                        self.logger.warning("No match for '" + group_filter + " group name:" + group_name + "' found, using match_groups_by attribute '" + self.match_groups_by + "'")
+                        return
+
             elif request_type == 'course_classlist':
                 for ignore, entry in json.loads(response.content).items():
                     user_list.append(entry[0][self.key_identifier])
