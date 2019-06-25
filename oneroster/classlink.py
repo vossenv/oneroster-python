@@ -46,7 +46,11 @@ class ClasslinkConnector():
             key_id = self.execute_actions(group_filter, None, group_name, 'key_identifier')
             if key_id is None:
                 return results
-            results.extend(self.execute_actions(group_filter, user_filter, key_id, 'mapped_users'))
+            returned_users = self.execute_actions(group_filter, user_filter, key_id, 'mapped_users')
+            if returned_users is None:
+                self.logger.warning("No users found for " + group_filter + "::" + group_name + "::" + user_filter)
+                return results
+            results.extend(returned_users)
         return results[0:self.max_users] if self.max_users > 0 else results
 
     def execute_actions(self, group_filter, user_filter, identifier, request_type):
@@ -93,9 +97,8 @@ class ClasslinkConnector():
             else:
                 response = self.classlink_api.make_roster_request(response.links[key]['url'])
             if not response.ok:
-                raise ValueError('Non Successful Response'
-                                 + '  ' + 'status:' + str(response.status_code) + '  ' + 'message:' + str(
-                    response.reason))
+                self.bad_response_handler(response)
+                return
             if request_type == 'key_identifier':
                 other = 'course' if group_filter == 'courses' else 'classes'
                 name_identifier, revised_key = ('name', 'orgs') if group_filter == 'schools' else ('title', other)
@@ -131,6 +134,13 @@ class ClasslinkConnector():
 
         return user_list
 
+    def bad_response_handler(self, response):
+        if response.reason == "Unauthorized":
+            self.logger.warning(response.reason + " Invalid credentials used... " )
+        elif response.reason == 'Not Found':
+            self.logger.warning(response.reason + " .....Resource not found at " + response.text)
+        else:
+            self.logger.warning("Unexpected error, please review configuration")
 
 class ClasslinkAPI(object):
     def __init__(self, client_id, client_secret):
