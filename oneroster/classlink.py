@@ -24,6 +24,7 @@ class ClasslinkConnector():
         self.page_size = str(options.get('page_size'))
         self.user_count = 0
         self.classlink_api = ClasslinkAPI(self.client_id, self.client_secret)
+        self.match_groups_by = options.get('match_groups_by') or 'name'
 
     def get_users(self,
                   group_filter=None,  # Type of group (class, course, school)
@@ -98,14 +99,23 @@ class ClasslinkConnector():
             if request_type == 'key_identifier':
                 other = 'course' if group_filter == 'courses' else 'classes'
                 name_identifier, revised_key = ('name', 'orgs') if group_filter == 'schools' else ('title', other)
+                if self.match_groups_by is not 'name':
+                    name_identifier = self.match_groups_by
                 for entry in json.loads(response.content).get(revised_key):
-                    if decode_string(entry[name_identifier]) == decode_string(group_name):
-                        try:
-                            key_id = entry[self.key_identifier]
-                        except ValueError:
-                            raise ValueError('Key identifier: ' + self.key_identifier + ' not a valid identifier')
+                    try:
+                        if decode_string(entry[name_identifier]) == decode_string(group_name):
+                            try:
+                                key_id = entry[self.key_identifier]
+                            except ValueError:
+                                raise ValueError('Key identifier: ' + self.key_identifier + ' not a valid identifier')
+                    except KeyError:
+                        raise KeyError("(match_groups_by) attribute  '" + name_identifier + "'  not found")
+                    try:
                         user_list.append(key_id)
-                        return user_list[0]
+                    except UnboundLocalError:
+                        self.logger.warning("No match for '" + group_filter + " " + group_name + "' found, using match_groups_by attribute '" + self.match_groups_by + "'")
+                        return ""
+                    return user_list[0]
             elif request_type == 'course_classlist':
                 for ignore, entry in json.loads(response.content).items():
                     user_list.append(entry[0][self.key_identifier])
