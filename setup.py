@@ -30,7 +30,10 @@ setup(name='oneroster',
       ],
       tests_require=[
           'mock',
-          'pytest'
+          'pytest',
+          'pyyaml',
+          'vcrpy',
+          'pytest-vcr'
       ],
 )
 
