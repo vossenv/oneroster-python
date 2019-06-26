@@ -136,11 +136,12 @@ class ClasslinkConnector():
 
     def bad_response_handler(self, response):
         if response.reason == "Unauthorized":
-            self.logger.warning(response.reason + " Invalid credentials used... " )
+            self.logger.warning(response.reason + " Invalid credentials used... ")
         elif response.reason == 'Not Found':
             self.logger.warning(response.reason + " .....Resource not found at " + response.text)
         else:
             self.logger.warning("Unexpected error, please review configuration")
+
 
 class ClasslinkAPI(object):
     def __init__(self, client_id, client_secret):
