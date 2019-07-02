@@ -114,10 +114,8 @@ class ClasslinkConnector():
                             return entry[self.key_identifier]
                         except KeyError:
                             raise KeyError('Key identifier: ' + self.key_identifier + ' not a valid identifier')
-                    else:
-                        self.logger.warning("No match for '" + group_filter + " group name:" + group_name + "' found, using match_groups_by attribute '" + self.match_groups_by + "'")
-                        return
-
+                self.logger.warning("No match for '" + group_filter + " group name:" + group_name + "' found, using match_groups_by attribute '" + self.match_groups_by + "'")
+                return
             elif request_type == 'course_classlist':
                 for ignore, entry in json.loads(response.content).items():
                     user_list.append(entry[0][self.key_identifier])
