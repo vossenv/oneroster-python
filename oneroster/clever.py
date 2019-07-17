@@ -8,8 +8,6 @@ class CleverConnector():
     def __init__(self, options):
 
         self.logger = logging.getLogger("clever")
-        self.client_id = options.get('client_id')
-        self.client_secret = options.get('client_secret')
         self.max_users = options.get('max_user_count') or 0
         self.match_groups_by = options.get('match_groups_by') or 'name'
         self.page_size = options.get('page_size') or 10000
@@ -18,18 +16,8 @@ class CleverConnector():
         self.user_count = 0
         self.calls_made = []
 
-        if not self.access_token:
-            self.authenticate()
-
         self.auth_header = {
             "Authorization": "Bearer " + self.access_token}
-
-    def authenticate(self):
-        try:
-            auth_resp = requests.get("https://clever.com/oauth/tokens", auth=(self.client_id, self.client_secret))
-            self.access_token = json.loads(auth_resp.content)['data'][0]['access_token']
-        except ValueError:
-            raise LookupError("Authorization attempt failed...")
 
     def get_users(self,
                   group_filter=None,  # Type of group (class, course, school)

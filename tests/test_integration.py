@@ -8,8 +8,6 @@ from oneroster.clever import *
 def clever_api():
     options = {
         'host': 'https://api.clever.com/v2.1/',
-        'client_id': '',
-        'client_secret': '',
         'key_identifier': 'id',
         'page_size': 1000,
         'max_user_count': 0,
