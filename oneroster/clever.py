@@ -93,7 +93,7 @@ class CleverConnector():
 
     def get_primary_key(self, type, name):
         if self.match_groups_by == 'id':
-            return name
+            return [name]
         if self.max_users > 0  and self.user_count > self.max_users:
             return []
 
