@@ -16,7 +16,7 @@ class CleverConnector():
         self.user_count = 0
 
         self.logger.debug("Initializing connector with options: ")
-        self.logger.debug(str(filter_dict(vars(self))))
+        self.logger.info(filter_dict(vars(self), ['access_token']))
 
         self.auth_header = {
             "Authorization": "Bearer " + self.access_token}
@@ -28,8 +28,7 @@ class CleverConnector():
                   ):
 
         calls = self.translate(group_filter=group_filter, user_filter=user_filter)
-        group_desc = "" if not group_filter else group_filter + " / " + group_name + " / "
-        self.logger.info("Executing requests for: " + group_desc + user_filter)
+        log_group_details(user_filter, group_filter, group_name, self.logger)
 
         results = []
         self.user_count = 0
@@ -63,7 +62,7 @@ class CleverConnector():
         collected_objects = []
         count_users = '/users' in url or '/students' in url or '/teachers' in url
         if count_users:
-            self.logger.info("Getting users from: " + url)
+            log_call_details(url, self.logger)
         while True:
             if self.max_users and self.user_count > self.max_users:
                 break
@@ -75,7 +74,7 @@ class CleverConnector():
                     next = '&starting_after=' + new_objects[-1]['data']['id']
                     if count_users:
                         self.user_count += len(new_objects)
-                        self.logger.info(str(len(new_objects)) + " users returned" )
+                        log_followup_details(len(new_objects), self.logger)
                 else:
                     break
             except Exception as e:
