@@ -26,6 +26,10 @@ class ClasslinkConnector():
         self.classlink_api = ClasslinkAPI(self.client_id, self.client_secret)
         self.match_groups_by = options.get('match_groups_by') or 'name'
 
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.info("Initializing connector with options: ")
+        self.logger.info(filter_dict(vars(self), ['client_secret']))
+
     def get_users(self,
                   group_filter=None,  # Type of group (class, course, school)
                   group_name=None,  # Plain group name (Math 6)
@@ -33,6 +37,7 @@ class ClasslinkConnector():
                   ):
 
         results = []
+        log_group_details(user_filter, group_filter, group_name, self.logger)
         if group_filter == 'courses':
             key_id = self.execute_actions('courses', group_name, self.key_identifier, 'key_identifier')
             if key_id is None:
@@ -89,6 +94,8 @@ class ClasslinkConnector():
         user_list = []
         key = 'first'
         count_users = '/users' in url or '/students' in url or '/teachers' in url
+        if count_users:
+            log_call_details(url, self.logger)
         while key is not None:
             if self.max_users and self.user_count > self.max_users:
                 break
@@ -99,6 +106,7 @@ class ClasslinkConnector():
             if not response.ok:
                 self.bad_response_handler(response)
                 return
+
             if request_type == 'key_identifier':
                 other = 'course' if group_filter == 'courses' else 'classes'
                 name_identifier, revised_key = ('name', 'orgs') if group_filter == 'schools' else ('title', other)
@@ -122,10 +130,15 @@ class ClasslinkConnector():
             else:
                 for ignore, users in json.loads(response.content).items():
                     user_list.extend(users)
+
+            if count_users:
+                log_followup_details(len(user_list), self.logger)
+
             if key == 'last' or int(response.headers._store['x-count'][1]) < int(self.page_size):
                 break
             key = 'next' if 'next' in response.links else 'last'
             self.user_count += len(user_list) if count_users else 0
+
 
         if not user_list and not self.max_users:
             self.logger.warning("No " + request_type + " for " + group_filter + "  " + group_name)

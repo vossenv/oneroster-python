@@ -14,7 +14,9 @@ class CleverConnector():
         self.access_token = options.get('access_token')
         self.host = options.get('host') or 'https://api.clever.com/v2.1/'
         self.user_count = 0
-        self.calls_made = []
+
+        self.logger.debug("Initializing connector with options: ")
+        self.logger.info(filter_dict(vars(self), ['access_token']))
 
         self.auth_header = {
             "Authorization": "Bearer " + self.access_token}
@@ -25,8 +27,11 @@ class CleverConnector():
                   user_filter=None,  # Which users: users, students, staff
                   ):
 
-        results = []
         calls = self.translate(group_filter=group_filter, user_filter=user_filter)
+        log_group_details(user_filter, group_filter, group_name, self.logger)
+
+        results = []
+        self.user_count = 0
         if group_filter == 'courses':
             results = self.get_users_for_course(name=group_name, user_filter=user_filter)
         elif group_filter:
@@ -34,6 +39,7 @@ class CleverConnector():
                 keylist = self.get_primary_key(group_filter, group_name)
                 if not keylist:
                     break
+
                 for i in keylist:
                     results.extend(self.make_call(c.format(i)))
         else:
@@ -45,9 +51,6 @@ class CleverConnector():
             user['familyName'] = user['name'].get('last')
             user['middleName'] = user['name'].get('middle')
 
-        #self.logger.info("Collected " + str(self.user_count) + " total users for calls:" + str(self.calls_made))
-        self.calls_made = []
-        self.user_count = 0
         return results[0:self.max_users] if self.max_users > 0 else results
 
 
@@ -59,7 +62,7 @@ class CleverConnector():
         collected_objects = []
         count_users = '/users' in url or '/students' in url or '/teachers' in url
         if count_users:
-            self.logger.info("Getting users from: " + url)
+            log_call_details(url, self.logger)
         while True:
             if self.max_users and self.user_count > self.max_users:
                 break
@@ -71,7 +74,7 @@ class CleverConnector():
                     next = '&starting_after=' + new_objects[-1]['data']['id']
                     if count_users:
                         self.user_count += len(new_objects)
-                        self.logger.info("Collected users: " + str(self.user_count))
+                        log_followup_details(len(new_objects), self.logger)
                 else:
                     break
             except Exception as e:
