@@ -1,4 +1,4 @@
-mock==3.0.5
-pytest==4.6.3
-requests==2.22.0
-six==1.12.0
+mock
+pytest
+requests
+six
