@@ -1,5 +1,6 @@
 
-
+import collections
+import six
 
 def decode_string(string):
     try:
@@ -29,3 +30,23 @@ def log_followup_details(count, logger):
 
 def log_call_details(url, logger):
     logger.info("Getting users from: " + url)
+
+def match_object(object, match_on, value):
+    if not isinstance(object, dict):
+        raise TypeError("Invalid comparison: must be dictionary to compare: " + str(object))
+    if isinstance(match_on, collections.MutableMapping):
+        raise TypeError("Error! Dictionary not allowed for match keys: " + str(match_on))
+    elif isinstance(match_on, str):
+        match_on = [match_on]
+
+    value = decode_string(value)
+    decoded_obj = {decode_string(k): decode_string(v) for k, v in six.iteritems(object)}
+    try:
+        for field in iter(match_on):
+            field = decode_string(field)
+            if field in decoded_obj and decoded_obj[field] == value:
+                return True
+        return False
+    except TypeError as e:
+        raise TypeError("Error: specified match object is not string or iterable: "
+                        + str(match_on) + " --- " + str(e))

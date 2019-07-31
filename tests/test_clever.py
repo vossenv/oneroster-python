@@ -1,4 +1,3 @@
-import collections
 import re
 
 import mock
@@ -61,6 +60,14 @@ def test_get_users_for_section(get_key, requests_get, clever_api, mock_many_stud
                                     group_name='Class 003, Homeroom - Stark - 0')
     assert reduce(mock_many_students) == reduce(response)
 
+    # Get students adding fields
+    requests_get.side_effect = mock_student_response
+    response = clever_api.get_users(user_filter='students',
+                                    group_filter='sections',
+                                    group_name='Class 003, Homeroom - Stark - 0',
+                                    match_on=['name', 'subject', 'unrelated'])
+    assert reduce(mock_many_students) == reduce(response)
+
     # Get students
     requests_get.side_effect = mock_teacher_response
     response = clever_api.get_users(user_filter='teachers',
@@ -111,7 +118,7 @@ def test_get_primary_key(mock_make_call, clever_api, log_stream, mock_section_da
     clever_api.get_primary_key("sections", "fake")
     stream.flush()
     logs = stream.getvalue()
-    assert re.search("(No property: 'bad' was found on section for entity 'fake')", logs)
+    assert re.search('(No objects found for sections:).*(fake)', logs)
 
     # Get ID based on SIS ID
     clever_api.match_groups_by = "sis_id"
@@ -123,10 +130,16 @@ def test_get_primary_key(mock_make_call, clever_api, log_stream, mock_section_da
     keys = clever_api.get_primary_key("sections", "Math 101")
     assert keys == ['58da8c6b894273be680001fc']
 
+    # Get ID using match_on
+    clever_api.match_groups_by = 'wrong'
+    keys = clever_api.get_primary_key("sections", "Math 101", ['course', 'name'])
+    assert keys == ['58da8c6b894273be680001fc']
+
 
 @mock.patch('oneroster.clever.CleverConnector.make_call')
 @mock.patch('oneroster.clever.CleverConnector.get_primary_key')
 def test_get_sections_for_course(get_key, make_call, clever_api, mock_section_data):
+
     # Sections for ID 1
     data_1 = mock_section_data[0:2]
 
@@ -152,16 +165,13 @@ def test_get_users_for_course(get_sections, make_call, clever_api, mock_user_dat
 
     get_sections.return_value = ['12345']
     make_call.side_effect = [mock_students, mock_teachers]
-
     response = clever_api.get_users_for_course("Math 9", "users")
     assert reduce(mock_user_data) == reduce(response)
 
+    make_call.side_effect = [mock_students, mock_teachers]
+    response = clever_api.get_users_for_course("Math 9", "users", ['name', 'subject'])
+    assert reduce(mock_user_data) == reduce(response)
 
-# def test_translate(clever_api):
-#     calls = clever_api.translate('sections', 'users')
-#     assert calls[0] == clever_api.clever_api.get_students_for_section_with_http_info
-#     assert calls[1] == clever_api.clever_api.get_teachers_for_section_with_http_info
-#     pytest.raises(ValueError, clever_api.translate, user_filter="x", group_filter="y")
 
 def reduce(dictionary):
     return collections.Counter([x['id'] for x in dictionary])
@@ -178,10 +188,6 @@ def get_mock_api_response(data, status_code=200, headers=None):
     response.headers = headers
 
     return response
-
-
-def get_mock_api_response_dataonly(data):
-    return get_mock_api_response(data)[0].data
 
 
 # Not a real test - just for producing data

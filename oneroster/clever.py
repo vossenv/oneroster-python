@@ -15,6 +15,7 @@ class CleverConnector():
         self.host = options.get('host') or 'https://api.clever.com/v2.1/'
         self.user_count = 0
 
+
         self.logger.debug("Initializing connector with options: ")
         self.logger.info(filter_dict(vars(self), ['access_token']))
 
@@ -25,8 +26,10 @@ class CleverConnector():
                   group_filter=None,  # Type of group (class, course, school)
                   group_name=None,  # Plain group name (Math 6)
                   user_filter=None,  # Which users: users, students, staff
+                  match_on=None,
                   ):
 
+        match_on = self.match_groups_by if not match_on else match_on
         calls = self.translate(group_filter=group_filter, user_filter=user_filter)
         log_group_details(user_filter, group_filter, group_name, self.logger)
 
@@ -36,7 +39,7 @@ class CleverConnector():
             results = self.get_users_for_course(name=group_name, user_filter=user_filter)
         elif group_filter:
             for c in calls:
-                keylist = self.get_primary_key(group_filter, group_name)
+                keylist = self.get_primary_key(group_filter, group_name, match_on)
                 if not keylist:
                     break
 
@@ -82,7 +85,8 @@ class CleverConnector():
         extracted_objects = [o['data'] for o in collected_objects]
         return extracted_objects
 
-    def get_primary_key(self, type, name):
+    def get_primary_key(self, type, name, match_on=None):
+        match_on = self.match_groups_by if not match_on else match_on
         if self.match_groups_by == 'id':
             return [name]
         if self.max_users > 0  and self.user_count > self.max_users:
@@ -94,7 +98,7 @@ class CleverConnector():
 
         for o in objects:
             try:
-                if decode_string(o[self.match_groups_by]) == decode_string(name):
+               if match_object(o, match_on, name):
                     id_list.append(o['id'])
             except KeyError:
                 self.logger.warning("No property: '" + self.match_groups_by +
@@ -104,8 +108,9 @@ class CleverConnector():
             self.logger.warning("No objects found for " + type + ": '" + name + "'")
         return id_list
 
-    def get_sections_for_course(self, name):
-        id_list = self.get_primary_key('courses', name)
+    def get_sections_for_course(self, name, match_on=None):
+        match_on = self.match_groups_by if not match_on else match_on
+        id_list = self.get_primary_key('courses', name, match_on)
         sections = []
         for i in id_list:
             call = self.translate('courses', 'sections')[0].format(i)
@@ -116,9 +121,10 @@ class CleverConnector():
         else:
             return [s['id'] for s in sections]
 
-    def get_users_for_course(self, name, user_filter='users'):
+    def get_users_for_course(self, name, user_filter='users', match_on=None):
+        match_on = self.match_groups_by if not match_on else match_on
         urls = self.translate('sections', user_filter)
-        sections = self.get_sections_for_course(name)
+        sections = self.get_sections_for_course(name, match_on)
         user_list = []
         for s in sections:
             for c in urls:
