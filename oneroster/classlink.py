@@ -34,49 +34,52 @@ class ClasslinkConnector():
                   group_filter=None,  # Type of group (class, course, school)
                   group_name=None,  # Plain group name (Math 6)
                   user_filter=None,  # Which users: users, students, staff
+                  match_on=None,
                   ):
 
         results = []
+        match_on = self.match_groups_by if not match_on else match_on
         log_group_details(user_filter, group_filter, group_name, self.logger)
         if group_filter == 'courses':
-            key_id = self.execute_actions('courses', group_name, self.key_identifier, 'key_identifier')
+            key_id = self.execute_actions('courses', group_name, self.key_identifier, 'key_identifier', match_on)
             if key_id is None:
                 return results
-            list_classes = self.execute_actions(group_filter, user_filter, key_id, 'course_classlist')
+            list_classes = self.execute_actions(group_filter, user_filter, key_id, 'course_classlist', match_on)
             for each_class in list_classes:
-                results.extend(self.execute_actions('classes', user_filter, each_class, 'mapped_users'))
+                results.extend(self.execute_actions('classes', user_filter, each_class, 'mapped_users', match_on))
         elif not group_filter:
-            results.extend(self.execute_actions(None, user_filter, None, 'all_users'))
+            results.extend(self.execute_actions(None, user_filter, None, 'all_users', match_on))
         else:
-            key_id = self.execute_actions(group_filter, None, group_name, 'key_identifier')
+            key_id = self.execute_actions(group_filter, None, group_name, 'key_identifier', match_on)
             if key_id is None:
                 return results
-            returned_users = self.execute_actions(group_filter, user_filter, key_id, 'mapped_users')
+            returned_users = self.execute_actions(group_filter, user_filter, key_id, 'mapped_users', match_on)
             if returned_users is None:
                 self.logger.warning("No users found for " + group_filter + "::" + group_name + "::" + user_filter)
                 return results
             results.extend(returned_users)
         return results[0:self.max_users] if self.max_users > 0 else results
 
-    def execute_actions(self, group_filter, user_filter, identifier, request_type):
+    def execute_actions(self, group_filter, user_filter, identifier, request_type, match_on=None):
         result = []
+        match_on = self.match_groups_by if not match_on else match_on
         if request_type == 'all_users':
             url_request = self.construct_url(user_filter, None, '', None)
-            result = self.make_call(url_request, 'all_users', None)
+            result = self.make_call(url_request, 'all_users', None, match_on)
         elif request_type == 'key_identifier':
             if group_filter == 'courses':
                 url_request = self.construct_url(user_filter, identifier, 'course_classlist', None)
-                result = self.make_call(url_request, 'key_identifier', group_filter, user_filter)
+                result = self.make_call(url_request, 'key_identifier', group_filter, user_filter, match_on)
             else:
                 url_request = self.construct_url(group_filter, identifier, 'key_identifier', None)
-                result = self.make_call(url_request, 'key_identifier', group_filter, identifier)
+                result = self.make_call(url_request, 'key_identifier', group_filter, identifier, match_on)
         elif request_type == 'mapped_users':
             base_filter = group_filter if group_filter == 'schools' else 'classes'
             url_request = self.construct_url(base_filter, identifier, request_type, user_filter)
-            result = self.make_call(url_request, 'mapped_users', group_filter, group_filter)
+            result = self.make_call(url_request, 'mapped_users', group_filter, group_filter, match_on)
         elif request_type == 'course_classlist':
             url_request = self.construct_url("", identifier, 'users_from_course', None)
-            result = self.make_call(url_request, request_type, group_filter)
+            result = self.make_call(url_request, request_type, group_filter, match_on)
         return result
 
     def construct_url(self, base_string_seeking, id_specified, request_type, users_filter):
@@ -90,9 +93,10 @@ class ClasslinkConnector():
             url_ender = base_string_seeking + '?limit=' + self.page_size + '&offset=0'
         return self.host_name + url_ender
 
-    def make_call(self, url, request_type, group_filter, group_name=None):
+    def make_call(self, url, request_type, group_filter, group_name=None, match_on=None):
         user_list = []
         key = 'first'
+        match_on = self.match_groups_by if not match_on else match_on
         count_users = '/users' in url or '/students' in url or '/teachers' in url
         if count_users:
             log_call_details(url, self.logger)
@@ -110,19 +114,15 @@ class ClasslinkConnector():
             if request_type == 'key_identifier':
                 other = 'course' if group_filter == 'courses' else 'classes'
                 name_identifier, revised_key = ('name', 'orgs') if group_filter == 'schools' else ('title', other)
-                if self.match_groups_by is not 'name':
-                    name_identifier = self.match_groups_by
+                if match_on is not 'name':
+                    name_identifier = match_on
                 for entry in json.loads(response.content).get(revised_key):
-                    if name_identifier not in entry:
-                        self.logger.warning("match_groups_by attribute  '" + name_identifier + "'  not found for " + group_filter + " " + group_name +
-                                            " ..... available keys are " + str(list(entry.keys())))
-                        return
-                    if decode_string(entry[name_identifier]) == decode_string(group_name):
+                    if match_object(entry, name_identifier, group_name):
                         try:
                             return entry[self.key_identifier]
                         except KeyError:
                             raise KeyError('Key identifier: ' + self.key_identifier + ' not a valid identifier')
-                self.logger.warning("No match for '" + group_filter + " group name:" + group_name + "' found, using match_groups_by attribute '" + self.match_groups_by + "'")
+                self.logger.warning("No match for '" + group_filter + " group name:" + group_name + "' found, using match_groups_by attribute '" + str(match_on) + "'")
                 return
             elif request_type == 'course_classlist':
                 for ignore, entry in json.loads(response.content).items():
