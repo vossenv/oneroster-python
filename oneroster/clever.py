@@ -1,7 +1,10 @@
 import json
 import logging
+
 import requests
+
 from .util import *
+
 
 class CleverConnector():
 
@@ -14,7 +17,7 @@ class CleverConnector():
         self.access_token = options.get('access_token')
         self.host = options.get('host') or 'https://api.clever.com/v2.1/'
         self.user_count = 0
-
+        self.key_identifier = options.get('key_identifier') or 'id'
 
         self.logger.debug("Initializing connector with options: ")
         self.logger.info(filter_dict(vars(self), ['access_token']))
@@ -56,7 +59,6 @@ class CleverConnector():
 
         return results[0:self.max_users] if self.max_users > 0 else results
 
-
     def get_all_users(self, calls):
         return [self.make_call(c) for c in calls]
 
@@ -69,19 +71,30 @@ class CleverConnector():
         while True:
             if self.max_users and self.user_count > self.max_users:
                 break
+
             try:
                 response = requests.get(url + '?limit=' + str(self.page_size) + next, headers=self.auth_header)
-                new_objects = json.loads(response.content)['data']
-                if new_objects:
-                    collected_objects.extend(new_objects)
-                    next = '&starting_after=' + new_objects[-1]['data']['id']
-                    if count_users:
-                        self.user_count += len(new_objects)
-                        log_followup_details(len(new_objects), self.logger)
-                else:
-                    break
             except Exception as e:
-                raise e
+                raise e.__class__("Call to clever failed. Reason: " + str(e))
+            if response.status_code is not 200:
+                r = decode_string(response.content)
+                raise requests.RequestException("Call was not successful: " + str(response.status_code) + ": " + r)
+            try:
+                new_objects = json.loads(response.content)['data']
+            except TypeError as e:
+                raise requests.RequestException("Cannot parse json response: " + str(e))
+
+            if new_objects:
+                collected_objects.extend(new_objects)
+                try:
+                    next = '&starting_after=' + new_objects[-1]['data'][self.key_identifier]
+                except KeyError:
+                    raise AttributeError("Error: invalid primary key: " + self.key_identifier)
+                if count_users:
+                    self.user_count += len(new_objects)
+                    log_followup_details(len(new_objects), self.logger)
+            else:
+                break
         extracted_objects = [o['data'] for o in collected_objects]
         return extracted_objects
 
@@ -89,7 +102,7 @@ class CleverConnector():
         match_on = self.match_groups_by if not match_on else match_on
         if self.match_groups_by == 'id':
             return [name]
-        if self.max_users > 0  and self.user_count > self.max_users:
+        if self.max_users > 0 and self.user_count > self.max_users:
             return []
 
         url = self.translate(None, type)[0]
@@ -97,15 +110,18 @@ class CleverConnector():
         id_list = []
 
         for o in objects:
+
             try:
-               if match_object(o, match_on, name):
-                    id_list.append(o['id'])
-            except KeyError:
-                self.logger.warning("No property: '" + self.match_groups_by +
-                                    "' was found on " + type.rstrip('s') + " for entity '" + name + "'")
+                if match_object(o, match_on, name):
+                    id_list.append(o[self.key_identifier])
+            except Exception as e:
+                self.logger.warning(e)
                 break
+
         if not id_list:
-            self.logger.warning("No objects found for " + type + ": '" + name + "'")
+            self.logger.warning("No objects found for "
+                                + type + ": '" + name +
+                                "' - possible bad matcher (" + match_on + ")?")
         return id_list
 
     def get_sections_for_course(self, name, match_on=None):
@@ -119,7 +135,7 @@ class CleverConnector():
             self.logger.warning("No sections found for course '" + name + "'")
             return []
         else:
-            return [s['id'] for s in sections]
+            return [s[self.key_identifier] for s in sections]
 
     def get_users_for_course(self, name, user_filter='users', match_on=None):
         match_on = self.match_groups_by if not match_on else match_on
@@ -161,7 +177,7 @@ class CleverConnector():
         ]
 
         if group_filter + "_" + user_filter not in allowed_calls:
-            raise ValueError("Unrecognized method request: 'get_" + user_filter + "_for_" + group_filter + "'")
+            raise ValueError("Unrecognized request: 'get_" + user_filter + "_for_" + group_filter + "'")
 
         group_filter = group_filter + "/{}/" if group_filter else ''
         url = self.host + group_filter + user_filter
