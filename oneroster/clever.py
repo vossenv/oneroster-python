@@ -75,21 +75,20 @@ class CleverConnector():
             try:
                 response = requests.get(url + '?limit=' + str(self.page_size) + next, headers=self.auth_header)
             except Exception as e:
-                raise e.__class__("Call to clever failed. Reason: " + str(e))
+                raise e.__class__(log_failed_call(e))
             if response.status_code is not 200:
-                r = decode_string(response.content)
-                raise requests.RequestException("Call was not successful: " + str(response.status_code) + ": " + r)
+                raise requests.RequestException(log_bad_response(response.status_code, response.content))
             try:
                 new_objects = json.loads(response.content)['data']
             except TypeError as e:
-                raise requests.RequestException("Cannot parse json response: " + str(e))
+                raise requests.RequestException(log_bad_json(e, response.content))
 
             if new_objects:
                 collected_objects.extend(new_objects)
                 try:
                     next = '&starting_after=' + new_objects[-1]['data'][self.key_identifier]
                 except KeyError:
-                    raise AttributeError("Error: invalid primary key: " + self.key_identifier)
+                    raise AttributeError(log_bad_key_id(self.key_identifier))
                 if count_users:
                     self.user_count += len(new_objects)
                     log_followup_details(len(new_objects), self.logger)
@@ -119,9 +118,7 @@ class CleverConnector():
                 break
 
         if not id_list:
-            self.logger.warning("No objects found for "
-                                + type + ": '" + name +
-                                "' - possible bad matcher (" + match_on + ")?")
+            self.logger.warning(log_bad_matcher_warning(type, name, match_on))
         return id_list
 
     def get_sections_for_course(self, name, match_on=None):

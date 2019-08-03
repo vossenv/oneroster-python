@@ -30,6 +30,24 @@ def log_followup_details(count, logger):
 
 def log_call_details(url, logger):
     logger.info("Getting users from: " + url)
+    
+def log_bad_json(e, object):
+    return "Cannot parse json response: " + str(e) + ": " + str(object)
+
+def log_bad_response(code, text):
+    return "Call was not successful: " + str(code) + ": " + decode_string(text)
+
+def log_failed_call(e):
+    return "Call to clever failed. Reason: " + str(e)
+
+def log_bad_key_id(id):
+    return 'Key identifier: ' + id + ' not a valid identifier'
+
+def log_bad_matcher_warning(group_filter, group_name, match_on):
+    return ("No objects found for " + 
+            group_filter + ": '" + 
+            group_name + "' - possible bad matcher (" 
+            + match_on + ")?")
 
 def match_object(object, match_on, value):
     if not isinstance(object, dict):

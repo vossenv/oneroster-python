@@ -1,13 +1,15 @@
-import collections
-import time
-from random import randint
-from six.moves import urllib
-import hmac
 import base64
+import collections
 import hashlib
-import requests
+import hmac
 import json
 import logging
+import time
+from random import randint
+
+import requests
+from six.moves import urllib
+
 from .util import *
 
 
@@ -103,13 +105,21 @@ class ClasslinkConnector():
         while key is not None:
             if self.max_users and self.user_count > self.max_users:
                 break
-            if key == 'first':
-                response = self.classlink_api.make_roster_request(url)
-            else:
-                response = self.classlink_api.make_roster_request(response.links[key]['url'])
-            if not response.ok:
-                self.bad_response_handler(response)
-                return
+            try:
+                if key == 'first':
+                    response = self.classlink_api.make_roster_request(url)
+                else:
+                    response = self.classlink_api.make_roster_request(response.links[key]['url'])
+            except Exception as e:
+                    raise e.__class__(log_failed_call(e))
+            if not isinstance(response, requests.Response):
+                raise requests.RequestException("404 No response recieved: " + url)
+            elif response.status_code is not 200:            
+                raise requests.RequestException(log_bad_response(response.status_code, response.content))
+            try:
+                json.loads(response.content)
+            except TypeError as e:
+                raise requests.RequestException(log_bad_json(e, response.content))
 
             if request_type == 'key_identifier':
                 other = 'course' if group_filter == 'courses' else 'classes'
@@ -121,8 +131,8 @@ class ClasslinkConnector():
                         try:
                             return entry[self.key_identifier]
                         except KeyError:
-                            raise KeyError('Key identifier: ' + self.key_identifier + ' not a valid identifier')
-                self.logger.warning("No match for '" + group_filter + " group name:" + group_name + "' found, using match_groups_by attribute '" + str(match_on) + "'")
+                            raise KeyError(log_bad_key_id(self.key_identifier))
+                self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
                 return
             elif request_type == 'course_classlist':
                 for ignore, entry in json.loads(response.content).items():
@@ -145,22 +155,11 @@ class ClasslinkConnector():
 
         return user_list
 
-    def bad_response_handler(self, response):
-        if response.reason == "Unauthorized":
-            self.logger.warning(response.reason + " Invalid credentials used... ")
-        elif response.reason == 'Not Found':
-            self.logger.warning(response.reason + " .....Resource not found at " + response.text)
-        else:
-            self.logger.warning("Unexpected error, please review configuration")
-
 
 class ClasslinkAPI(object):
     def __init__(self, client_id, client_secret):
         self._client_id = client_id
         self._client_secret = client_secret
-
-    def hello(self):
-        print("CLASSLINK")
 
     def make_roster_request(self, url):
 
