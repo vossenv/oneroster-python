@@ -47,7 +47,7 @@ def log_bad_matcher_warning(group_filter, group_name, match_on):
     return ("No objects found for " + 
             group_filter + ": '" + 
             group_name + "' - possible bad matcher (" 
-            + match_on + ")?")
+            + str(match_on) + ")?")
 
 def match_object(object, match_on, value):
     if not isinstance(object, dict):

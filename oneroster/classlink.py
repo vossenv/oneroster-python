@@ -23,10 +23,11 @@ class ClasslinkConnector():
         self.client_secret = options.get('client_secret')
         self.key_identifier = options.get('key_identifier')
         self.max_users = options.get('max_user_count') or 0
-        self.page_size = str(options.get('page_size'))
+        self.page_size = options.get('page_size') or 10000
         self.user_count = 0
         self.classlink_api = ClasslinkAPI(self.client_id, self.client_secret)
         self.match_groups_by = options.get('match_groups_by') or 'name'
+        self.page_size = self.page_size if self.page_size > 0 else 10000
 
         self.logger.setLevel(logging.DEBUG)
         self.logger.info("Initializing connector with options: ")
@@ -75,6 +76,7 @@ class ClasslinkConnector():
             else:
                 url_request = self.construct_url(group_filter, identifier, 'key_identifier', None)
                 result = self.make_call(url_request, 'key_identifier', group_filter, identifier, match_on)
+
         elif request_type == 'mapped_users':
             base_filter = group_filter if group_filter == 'schools' else 'classes'
             url_request = self.construct_url(base_filter, identifier, request_type, user_filter)
@@ -86,74 +88,65 @@ class ClasslinkConnector():
 
     def construct_url(self, base_string_seeking, id_specified, request_type, users_filter):
         if request_type == 'course_classlist':
-            url_ender = 'courses/?limit=' + self.page_size + '&offset=0'
+            url_ender = 'courses/?limit=' + str(self.page_size) + '&offset=0'
         elif request_type == 'users_from_course':
-            url_ender = 'courses/' + id_specified + '/classes?limit=' + self.page_size + '&offset=0'
+            url_ender = 'courses/' + id_specified + '/classes?limit=' + str(self.page_size) + '&offset=0'
         elif users_filter is not None:
-            url_ender = base_string_seeking + '/' + id_specified + '/' + users_filter + '?limit=' + self.page_size + '&offset=0'
+            url_ender = base_string_seeking + '/' + id_specified + '/' + users_filter + '?limit=' + str(self.page_size) + '&offset=0'
         else:
-            url_ender = base_string_seeking + '?limit=' + self.page_size + '&offset=0'
+            url_ender = base_string_seeking + '?limit=' + str(self.page_size) + '&offset=0'
         return self.host_name + url_ender
 
+    def get_url(self, url):
+        try:
+            response = self.classlink_api.make_roster_request(url)
+        except Exception as e:
+            raise e.__class__(log_failed_call(e))
+        if not isinstance(response, requests.Response):
+            raise requests.RequestException("404 No response recieved: " + url)
+        elif response.status_code is not 200:
+            raise requests.RequestException(log_bad_response(response.status_code, response.content))
+        try:
+            next = response.links.get('next')
+            next_url = next['url'] if next else None
+            full_data = json.loads(response.content)
+            return list(full_data.values())[0], next_url
+        except TypeError as e:
+            raise requests.RequestException(log_bad_json(e, response.content))
+
     def make_call(self, url, request_type, group_filter, group_name=None, match_on=None):
-        user_list = []
-        key = 'first'
+        object_list = []
+        next_url = url
         match_on = self.match_groups_by if not match_on else match_on
         count_users = '/users' in url or '/students' in url or '/teachers' in url
         if count_users:
             log_call_details(url, self.logger)
-        while key is not None:
-            if self.max_users and self.user_count > self.max_users:
-                break
-            try:
-                if key == 'first':
-                    response = self.classlink_api.make_roster_request(url)
-                else:
-                    response = self.classlink_api.make_roster_request(response.links[key]['url'])
-            except Exception as e:
-                    raise e.__class__(log_failed_call(e))
-            if not isinstance(response, requests.Response):
-                raise requests.RequestException("404 No response recieved: " + url)
-            elif response.status_code is not 200:            
-                raise requests.RequestException(log_bad_response(response.status_code, response.content))
-            try:
-                json.loads(response.content)
-            except TypeError as e:
-                raise requests.RequestException(log_bad_json(e, response.content))
-
+        while next_url:
+            data, next_url = self.get_url(next_url)
             if request_type == 'key_identifier':
-                other = 'course' if group_filter == 'courses' else 'classes'
-                name_identifier, revised_key = ('name', 'orgs') if group_filter == 'schools' else ('title', other)
-                if match_on is not 'name':
-                    name_identifier = match_on
-                for entry in json.loads(response.content).get(revised_key):
-                    if match_object(entry, name_identifier, group_name):
+                for entry in data:
+                    if match_object(entry, match_on, group_name):
                         try:
                             return entry[self.key_identifier]
                         except KeyError:
                             raise KeyError(log_bad_key_id(self.key_identifier))
-                self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
-                return
+                if not next_url:
+                    self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
+                    return
             elif request_type == 'course_classlist':
-                for ignore, entry in json.loads(response.content).items():
-                    user_list.append(entry[0][self.key_identifier])
+                object_list.extend([x[self.key_identifier] for x in data])
             else:
-                for ignore, users in json.loads(response.content).items():
-                    user_list.extend(users)
+                object_list.extend(data)
 
             if count_users:
-                log_followup_details(len(user_list), self.logger)
-
-            if key == 'last' or int(response.headers._store['x-count'][1]) < int(self.page_size):
+                log_followup_details(len(object_list), self.logger)
+                self.user_count += len(data)
+            if self.max_users and self.user_count >= self.max_users:
                 break
-            key = 'next' if 'next' in response.links else 'last'
-            self.user_count += len(user_list) if count_users else 0
 
-
-        if not user_list and not self.max_users:
+        if not object_list and not self.max_users:
             self.logger.warning("No " + request_type + " for " + group_filter + "  " + group_name)
-
-        return user_list
+        return object_list
 
 
 class ClasslinkAPI(object):
