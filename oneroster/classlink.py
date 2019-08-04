@@ -62,7 +62,6 @@ class ClasslinkConnector():
         return results[0:self.max_users] if self.max_users > 0 else results
 
     def execute_actions(self, group_filter, user_filter, identifier, request_type, match_on):
-        result = []
         if request_type == 'all_users':
             url_request = self.construct_url(user_filter, None, '', None)
             result = self.make_call(url_request, 'all_users', None, match_on)
@@ -128,7 +127,7 @@ class ClasslinkConnector():
                             raise KeyError(log_bad_key_id(self.key_identifier))
                 if not next_url and not object_list:
                     self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
-                    return
+                    return []
             elif request_type == 'course_classlist':
                 object_list.extend([x[self.key_identifier] for x in data])
             else:
