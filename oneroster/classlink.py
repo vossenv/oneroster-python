@@ -127,7 +127,6 @@ class ClasslinkConnector():
                             raise KeyError(log_bad_key_id(self.key_identifier))
                 if not next_url and not object_list:
                     self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
-                    return []
             elif request_type == 'course_classlist':
                 object_list.extend([x[self.key_identifier] for x in data])
             else:
