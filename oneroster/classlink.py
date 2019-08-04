@@ -44,28 +44,25 @@ class ClasslinkConnector():
         match_on = self.match_groups_by if not match_on else match_on
         log_group_details(user_filter, group_filter, group_name, self.logger)
         if group_filter == 'courses':
-            key_id = self.execute_actions('courses', group_name, self.key_identifier, 'key_identifier', match_on)
-            if key_id is None:
-                return results
-            list_classes = self.execute_actions(group_filter, user_filter, key_id, 'course_classlist', match_on)
-            for each_class in list_classes:
-                results.extend(self.execute_actions('classes', user_filter, each_class, 'mapped_users', match_on))
-        elif not group_filter:
-            results.extend(self.execute_actions(None, user_filter, None, 'all_users', match_on))
+            list_classes = []
+            id_list = self.execute_actions('courses', group_name, self.key_identifier, 'key_identifier', match_on)
+            for k in id_list:
+                list_classes.extend(self.execute_actions(group_filter, user_filter, k, 'course_classlist', match_on))
+            for c in list_classes:
+                results.extend(self.execute_actions('classes', user_filter, c, 'mapped_users', match_on))
+        elif group_filter:
+            id_list = self.execute_actions(group_filter, None, group_name, 'key_identifier', match_on)
+            for k in id_list:
+                results.extend(self.execute_actions(group_filter, user_filter, k, 'mapped_users', match_on))
         else:
-            key_id = self.execute_actions(group_filter, None, group_name, 'key_identifier', match_on)
-            if key_id is None:
-                return results
-            returned_users = self.execute_actions(group_filter, user_filter, key_id, 'mapped_users', match_on)
-            if returned_users is None:
-                self.logger.warning("No users found for " + group_filter + "::" + group_name + "::" + user_filter)
-                return results
-            results.extend(returned_users)
+            results.extend(self.execute_actions(None, user_filter, None, 'all_users', match_on))
+
+        if not results:
+            log_bad_matcher_warning(group_filter, group_name, match_on)
         return results[0:self.max_users] if self.max_users > 0 else results
 
-    def execute_actions(self, group_filter, user_filter, identifier, request_type, match_on=None):
+    def execute_actions(self, group_filter, user_filter, identifier, request_type, match_on):
         result = []
-        match_on = self.match_groups_by if not match_on else match_on
         if request_type == 'all_users':
             url_request = self.construct_url(user_filter, None, '', None)
             result = self.make_call(url_request, 'all_users', None, match_on)
@@ -117,7 +114,6 @@ class ClasslinkConnector():
     def make_call(self, url, request_type, group_filter, group_name=None, match_on=None):
         object_list = []
         next_url = url
-        match_on = self.match_groups_by if not match_on else match_on
         count_users = '/users' in url or '/students' in url or '/teachers' in url
         if count_users:
             log_call_details(url, self.logger)
@@ -127,10 +123,10 @@ class ClasslinkConnector():
                 for entry in data:
                     if match_object(entry, match_on, group_name):
                         try:
-                            return entry[self.key_identifier]
+                            object_list.append(entry[self.key_identifier])
                         except KeyError:
                             raise KeyError(log_bad_key_id(self.key_identifier))
-                if not next_url:
+                if not next_url and not object_list:
                     self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
                     return
             elif request_type == 'course_classlist':
@@ -145,9 +141,11 @@ class ClasslinkConnector():
                 break
 
         if not object_list and not self.max_users:
-            self.logger.warning("No " + request_type + " for " + group_filter + "  " + group_name)
+            self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
         return object_list
 
+
+##### Below code from classlink repository.  TB removed at a later date.
 
 class ClasslinkAPI(object):
     def __init__(self, client_id, client_secret):
@@ -176,7 +174,6 @@ class ClasslinkAPI(object):
 
         # Split the url into base url and params
         url_pieces = url.split("?")
-
         url_params = {}
 
         # Add the url params if they exist

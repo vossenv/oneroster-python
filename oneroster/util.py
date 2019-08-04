@@ -1,6 +1,6 @@
-
 import collections
 import six
+
 
 def decode_string(string):
     try:
@@ -16,38 +16,47 @@ def filter_dict(dict, filtered_fields=None):
 
     filtered = {}
     for k, v in dict.items():
-        if isinstance(v,str):
+        if isinstance(v, str):
             filtered[k] = "*******" if k in filtered_fields else v
 
     return filtered
+
 
 def log_group_details(user_filter, group_filter, group_name, logger):
     group_desc = "" if not group_filter else group_filter + " / " + group_name + " / "
     logger.info("Executing requests for: " + group_desc + user_filter)
 
+
 def log_followup_details(count, logger):
     logger.info(str(count) + " users returned")
 
+
 def log_call_details(url, logger):
     logger.info("Getting users from: " + url)
-    
+
+
 def log_bad_json(e, object):
     return "Cannot parse json response: " + str(e) + ": " + str(object)
+
 
 def log_bad_response(code, text):
     return "Call was not successful: " + str(code) + ": " + decode_string(text)
 
+
 def log_failed_call(e):
     return "Call to clever failed. Reason: " + str(e)
+
 
 def log_bad_key_id(id):
     return 'Key identifier: ' + id + ' not a valid identifier'
 
+
 def log_bad_matcher_warning(group_filter, group_name, match_on):
-    return ("No objects found for " + 
-            group_filter + ": '" + 
-            group_name + "' - possible bad matcher (" 
+    return ("No objects found for " +
+            group_filter + ": '" +
+            group_name + "' - possible bad matcher ("
             + str(match_on) + ")?")
+
 
 def match_object(object, match_on, value):
     if not isinstance(object, dict):
