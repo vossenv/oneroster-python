@@ -41,7 +41,9 @@ class ClasslinkConnector():
                   ):
 
         results = []
+        self.check_filters(group_filter, user_filter)
         match_on = self.match_groups_by if not match_on else match_on
+
         log_group_details(user_filter, group_filter, group_name, self.logger)
         if group_filter == 'courses':
             list_classes = []
@@ -141,6 +143,36 @@ class ClasslinkConnector():
         if not object_list and not self.max_users:
             self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
         return object_list
+
+    def check_filters(self, group_filter, user_filter):
+
+        group_filter = group_filter if group_filter else ''
+        user_filter = user_filter if user_filter else ''
+
+        allowed_calls = [
+            'classes_students',
+            'classes_teachers',
+            'classes_users',
+
+            'courses_students',
+            'courses_teachers',
+            'courses_users',
+            'courses_sections',
+
+            'schools_students',
+            'schools_teachers',
+            'schools_users',
+
+            '_students',
+            '_teachers',
+            '_users',
+            '_classes',
+            '_courses',
+            '_schools',
+        ]
+
+        if group_filter + "_" + user_filter not in allowed_calls:
+            raise ValueError("Unrecognized request: 'get_" + user_filter + "_for_" + group_filter + "'")
 
 
 ##### Below code from classlink repository.  TB removed at a later date.
