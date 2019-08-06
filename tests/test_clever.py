@@ -18,7 +18,7 @@ def clever_api():
         'access_token': 'TEST_TOKEN'
     }
 
-    return CleverConnector(options)
+    return CleverConnector(**options)
 
 
 @mock.patch('oneroster.clever.requests.get')

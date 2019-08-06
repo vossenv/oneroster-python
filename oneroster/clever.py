@@ -8,17 +8,25 @@ from .util import *
 
 class CleverConnector():
 
-    def __init__(self, options):
+    def __init__(self,
+                 host='https://api.clever.com/v2.1/',
+                 access_token=None,
+                 key_identfier='id',
+                 match_on=None,
+                 max_users=0,
+                 page_size=10000,
+                 ):
+
 
         self.logger = logging.getLogger("clever")
-        self.max_users = options.get('max_user_count') or 0
-        self.match_groups_by = options.get('match_groups_by') or 'name'
-        self.page_size = options.get('page_size') or 10000
-        self.access_token = options.get('access_token')
-        self.host = options.get('host') or 'https://api.clever.com/v2.1/'
+        self.max_users = max_users
+        self.match_groups_by = match_on if match_on else ['name', 'id']
+        self.page_size = page_size
+        self.access_token = access_token
+        self.host = host
         self.user_count = 0
-        self.key_identifier = options.get('key_identifier') or 'id'
-
+        self.key_identifier = key_identfier
+        self.page_size = self.page_size if self.page_size > 0 else 10000
         self.logger.debug("Initializing connector with options: ")
         self.logger.info(filter_dict(vars(self), ['access_token']))
 

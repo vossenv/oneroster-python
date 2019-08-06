@@ -16,17 +16,26 @@ from .util import *
 class ClasslinkConnector():
     """ Starts connection and makes queries with One-Roster API"""
 
-    def __init__(self, options):
+    def __init__(self,
+                 host,
+                 client_id=None,
+                 client_secret=None,
+                 key_identfier='sourcedId',
+                 match_on=None,
+                 max_users=0,
+                 page_size=10000,
+                 ):
+        
         self.logger = logging.getLogger("classlink")
-        self.host_name = options.get('host')
-        self.client_id = options.get('client_id')
-        self.client_secret = options.get('client_secret')
-        self.key_identifier = options.get('key_identifier')
-        self.max_users = options.get('max_user_count') or 0
-        self.page_size = options.get('page_size') or 10000
+        self.host = host
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.key_identifier = key_identfier
+        self.max_users = max_users
+        self.page_size = page_size
         self.user_count = 0
         self.classlink_api = ClasslinkAPI(self.client_id, self.client_secret)
-        self.match_groups_by = options.get('match_groups_by') or 'name'
+        self.match_groups_by = match_on if match_on else ['name', 'title', 'sourcedId']
         self.page_size = self.page_size if self.page_size > 0 else 10000
 
         self.logger.setLevel(logging.DEBUG)
@@ -93,7 +102,7 @@ class ClasslinkConnector():
             url_ender = base_string_seeking + '/' + id_specified + '/' + users_filter + '?limit=' + str(self.page_size) + '&offset=0'
         else:
             url_ender = base_string_seeking + '?limit=' + str(self.page_size) + '&offset=0'
-        return self.host_name + url_ender
+        return self.host + url_ender
 
     def get_url(self, url):
         try:
