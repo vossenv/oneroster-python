@@ -11,7 +11,7 @@ class CleverConnector():
     def __init__(self,
                  host='https://api.clever.com/v2.1/',
                  access_token=None,
-                 key_identfier='id',
+                 key_identifier='id',
                  match_on=None,
                  max_users=0,
                  page_size=10000,
@@ -25,7 +25,7 @@ class CleverConnector():
         self.access_token = access_token
         self.host = host
         self.user_count = 0
-        self.key_identifier = key_identfier
+        self.key_identifier = key_identifier
         self.page_size = self.page_size if self.page_size > 0 else 10000
         self.logger.debug("Initializing connector with options: ")
         self.logger.info(filter_dict(vars(self), ['access_token']))
