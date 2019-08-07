@@ -1,5 +1,7 @@
 # Oneroster Python Client
 
+## This library is in beta, and changes often.  Use at your own risk.
+
 This library facilitates easy access to the user database from Clever or Classlink.  
 The connectors provide single-method calls that will return users (students, teachers or both) from the provider of your choice,
 based on class, course, or school membership without the need for paging and response handling.  Additional documentation to come.

@@ -15,6 +15,7 @@ class CleverConnector():
                  match_on=None,
                  max_users=0,
                  page_size=10000,
+                 **kwargs
                  ):
 
 

@@ -24,6 +24,7 @@ class ClasslinkConnector():
                  match_on=None,
                  max_users=0,
                  page_size=10000,
+                 **kwargs
                  ):
         
         self.logger = logging.getLogger("classlink")
