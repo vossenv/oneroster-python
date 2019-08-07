@@ -1,6 +1,5 @@
 import pytest
 import yaml
-import collections
 from oneroster.clever import *
 
 
