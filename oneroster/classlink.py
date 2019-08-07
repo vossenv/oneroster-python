@@ -20,7 +20,7 @@ class ClasslinkConnector():
                  host,
                  client_id=None,
                  client_secret=None,
-                 key_identfier='sourcedId',
+                 key_identifier='sourcedId',
                  match_on=None,
                  max_users=0,
                  page_size=10000,
@@ -31,7 +31,7 @@ class ClasslinkConnector():
         self.host = host
         self.client_id = client_id
         self.client_secret = client_secret
-        self.key_identifier = key_identfier
+        self.key_identifier = key_identifier
         self.max_users = max_users
         self.page_size = page_size
         self.user_count = 0

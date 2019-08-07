@@ -16,6 +16,26 @@ For details on the development of this library, visit https://github.com/vossenv
 
 Contact Danimae Vossen (vossen.dm@gmail.com) for inquiries
 
+## What is Oneroster?
+Oneroster is not actually an application, but a specification.  Oneroster simplifies the management of rostering for education by standardizing the format for REST and CSV data handling.  This makes it easier for service applications (such as Adobe) to integrate with SIS (student information systems) platforms  that comply with the standard.  It is in a school's best interest to choose Oneroster standardized platforms, because it greatly simplifies the process of maintaining a synchronous state between their rostering breakdown and the products their users need access to.  An in-depth description of the standard can be found on the Oneroster homepage (IMS Globlal):
+
+[https://www.imsglobal.org/activity/onerosterlis](https://www.imsglobal.org/activity/onerosterlis "https://www.imsglobal.org/activity/onerosterlis")
+
+According to IMS, the big picture features of the standard include the following:
+
+- Provision key roster related data including student, course and related enrollment information between various platforms such as a student information system (SIS) and a learning management system (LMS).
+- Flexible implementation options to align with an institution’s needs and capabilities, supporting simple spreadsheet-style (CSV) exchanges as well as system-to-system exchanges using REST API’s
+- Improves data exchange among multiple systems with roster and gradebook information, thus eliminating problems before they happen
+- Transmit scored results between applications, such as student scores from the LMS back to the SIS.
+
+The Oneroster API is open source by definition, which means that all information regarding endpoints and data models is freely available in the actual specification.  The specification provides detailed guidance as to API structure.  Since all the major SIS players adopt the standard and provide similar access to it, the Oneroster connector enables flexibility to do rostering based provisioning - a highly desirable feature!  Adobe works with a great deal of educational organizations.  Most, if not all of these organizations already leverage SIS that include the Oneroster API/CSV implementation.  Some examples of these SIS are:
+
+- Classlink
+- Clever
+- Kivuto
+- Infinite Campus
+- Powerschool
+
 
 # Quick Start
 
