@@ -1,6 +1,5 @@
 import pytest
 import yaml
-import collections
 from oneroster.clever import *
 
 
@@ -10,12 +9,12 @@ def clever_api():
         'host': 'https://api.clever.com/v2.1/',
         'key_identifier': 'id',
         'page_size': 1000,
-        'max_user_count': 0,
-        'match_groups_by': 'name',
+        'max_users': 0,
+        'match_on': 'name',
         'access_token': 'TEST_TOKEN'
     }
 
-    return CleverConnector(options)
+    return CleverConnector(**options)
 
 
 @pytest.fixture()
