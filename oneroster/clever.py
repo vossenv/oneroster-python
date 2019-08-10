@@ -15,7 +15,7 @@ class CleverConnector():
                  match_on=None,
                  max_users=0,
                  page_size=10000,
-                 **kwargs
+                 **kwargs,
                  ):
 
 
@@ -31,8 +31,7 @@ class CleverConnector():
         self.logger.debug("Initializing connector with options: ")
         self.logger.info(filter_dict(vars(self), ['access_token']))
 
-        self.auth_header = {
-            "Authorization": "Bearer " + self.access_token}
+
 
     def get_users(self,
                   group_filter=None,  # Type of group (class, course, school)
@@ -82,7 +81,8 @@ class CleverConnector():
                 break
 
             try:
-                response = requests.get(url + '?limit=' + str(self.page_size) + next, headers=self.auth_header)
+                header = {"Authorization": "Bearer " + self.access_token}
+                response = requests.get(url + '?limit=' + str(self.page_size) + next, headers=header)
             except Exception as e:
                 raise e.__class__(log_failed_call(e))
             if response.status_code is not 200:
