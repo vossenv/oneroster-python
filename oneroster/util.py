@@ -44,7 +44,7 @@ def log_bad_response(code, text):
 
 
 def log_failed_call(e):
-    return "Call to clever failed. Reason: " + str(e)
+    return "Call failed. Reason: " + str(e)
 
 
 def log_bad_key_id(id):
