@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 test_deps = ['mock', 'pytest', 'pytest-cov']
 
 setup(name='oneroster',
-      version='0.0.12',
+      version='0.0.13',
       description='Simple Oneroster client for user management',
       long_description=long_description,
       long_description_content_type="text/markdown",
