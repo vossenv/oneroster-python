@@ -35,13 +35,12 @@ class ClasslinkConnector():
         self.max_users = max_users
         self.page_size = page_size
         self.user_count = 0
-        self.classlink_api = ClasslinkAPI(self.client_id, self.client_secret)
         self.match_groups_by = match_on if match_on else ['name', 'title', 'sourcedId']
         self.page_size = self.page_size if self.page_size > 0 else 10000
 
         self.logger.setLevel(logging.DEBUG)
-        self.logger.info("Initializing connector with options: ")
-        self.logger.info(filter_dict(vars(self), ['client_secret']))
+        self.logger.debug("Initializing connector with options: ")
+        self.logger.debug(filter_dict(vars(self), ['client_secret']))
 
     def get_users(self,
                   group_filter=None,  # Type of group (class, course, school)
@@ -50,8 +49,12 @@ class ClasslinkConnector():
                   match_on=None,
                   ):
 
+        if not self.client_id or not self.client_secret:
+            raise AssertionError("Classlink requires client id and client secret but both are not provided")
+
         results = []
         self.check_filters(group_filter, user_filter)
+        self.classlink_api = ClasslinkAPI(self.client_id, self.client_secret)
         match_on = self.match_groups_by if not match_on else match_on
 
         log_group_details(user_filter, group_filter, group_name, self.logger)

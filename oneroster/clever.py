@@ -29,10 +29,9 @@ class CleverConnector():
         self.key_identifier = key_identifier
         self.page_size = self.page_size if self.page_size > 0 else 10000
         self.logger.debug("Initializing connector with options: ")
-        self.logger.info(filter_dict(vars(self), ['access_token']))
+        self.logger.debug(filter_dict(vars(self), ['access_token']))
 
-        self.auth_header = {
-            "Authorization": "Bearer " + self.access_token}
+
 
     def get_users(self,
                   group_filter=None,  # Type of group (class, course, school)
@@ -40,6 +39,9 @@ class CleverConnector():
                   user_filter=None,  # Which users: users, students, staff
                   match_on=None,
                   ):
+
+        if not self.access_token:
+            raise AssertionError("Clever requires an access token but none was provided")
 
         match_on = self.match_groups_by if not match_on else match_on
         calls = self.translate(group_filter=group_filter, user_filter=user_filter)
@@ -82,7 +84,8 @@ class CleverConnector():
                 break
 
             try:
-                response = requests.get(url + '?limit=' + str(self.page_size) + next, headers=self.auth_header)
+                header = {"Authorization": "Bearer " + self.access_token}
+                response = requests.get(url + '?limit=' + str(self.page_size) + next, headers=header)
             except Exception as e:
                 raise e.__class__(log_failed_call(e))
             if response.status_code is not 200:
