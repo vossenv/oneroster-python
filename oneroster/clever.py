@@ -29,7 +29,7 @@ class CleverConnector():
         self.key_identifier = key_identifier
         self.page_size = self.page_size if self.page_size > 0 else 10000
         self.logger.debug("Initializing connector with options: ")
-        self.logger.info(filter_dict(vars(self), ['access_token']))
+        self.logger.debug(filter_dict(vars(self), ['access_token']))
 
 
 

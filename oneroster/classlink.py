@@ -39,8 +39,8 @@ class ClasslinkConnector():
         self.page_size = self.page_size if self.page_size > 0 else 10000
 
         self.logger.setLevel(logging.DEBUG)
-        self.logger.info("Initializing connector with options: ")
-        self.logger.info(filter_dict(vars(self), ['client_secret']))
+        self.logger.debug("Initializing connector with options: ")
+        self.logger.debug(filter_dict(vars(self), ['client_secret']))
 
     def get_users(self,
                   group_filter=None,  # Type of group (class, course, school)
