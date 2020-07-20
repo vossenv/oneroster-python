@@ -52,11 +52,7 @@ def log_bad_key_id(id):
 
 
 def log_bad_matcher_warning(group_filter, group_name, match_on):
-    return ("No objects found for " +
-            group_filter + ": '" +
-            group_name + "' - possible bad matcher ("
-            + str(match_on) + ")?")
-
+    return "No results found for query type {0}, name {1} matching by {2}".format(group_filter, group_name, match_on)
 
 def match_object(object, match_on, value):
     if not isinstance(object, dict):

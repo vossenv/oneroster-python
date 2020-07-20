@@ -72,8 +72,10 @@ class ClasslinkConnector():
         else:
             results.extend(self.execute_actions(None, user_filter, None, 'all_users', match_on))
 
-        if not results:
-            log_bad_matcher_warning(group_filter, group_name, match_on)
+        if group_filter and not results:
+            self.logger.warning(log_bad_matcher_warning(group_filter, group_name, match_on))
+        elif not results:
+            self.logger.warning("No results found - data may not be shared.")
         return results[0:self.max_users] if self.max_users > 0 else results
 
     def execute_actions(self, group_filter, user_filter, identifier, request_type, match_on):
